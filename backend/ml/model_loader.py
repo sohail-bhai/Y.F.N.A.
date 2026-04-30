@@ -19,6 +19,7 @@ import time
 import random
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from PIL import Image
@@ -314,10 +315,20 @@ def load_model() -> CivicBaseModel:
     if backend in ("local_torch", "local_tf"):
         if not settings.model_path:
             raise ValueError("MODEL_PATH must be set for local model backends.")
+        if not Path(settings.model_path).exists():
+            raise ValueError(
+                f"MODEL_PATH does not exist: {settings.model_path}. "
+                "Use a path available on the deployed server."
+            )
         return LocalTorchModel(settings.model_path)
     if backend == "yolo":
         if not settings.model_path:
             raise ValueError("MODEL_PATH must be set for YOLO backend.")
+        if not Path(settings.model_path).exists():
+            raise ValueError(
+                f"MODEL_PATH does not exist: {settings.model_path}. "
+                "For Railway, commit the .pt file into the repo or download it at startup."
+            )
         return YOLOModel(settings.model_path)
     if backend == "api":
         if not settings.model_api_url:

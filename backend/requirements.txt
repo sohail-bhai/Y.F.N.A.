@@ -17,5 +17,5 @@ numpy==1.26.4
 # Optional model deps (install as needed):
 # torch==2.2.1
 # torchvision==0.17.1
-# ultralytics==8.1.28   # YOLO
+ultralytics==8.1.28   # YOLO
 # tensorflow==2.15.0
