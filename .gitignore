@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+backend/venv/
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# SQLite Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+.yarn/
+frontend/dist/
+
+# Uploads
+backend/uploads/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Misc
+.env.example.local
+temp/
+tmp/
