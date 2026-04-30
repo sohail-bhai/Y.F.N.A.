@@ -6,6 +6,8 @@ Changes made and why:
 - Added helper amber note for truncated text and attachment reminder.
 - Kept existing CTA styling/animations/layout behavior.
 - Kept existing styling classes and animation patterns.
+- Added mobile detection to use mailto: on mobile devices (opens native email client).
+- Desktop uses Gmail web URL, mobile uses standard mailto: for better compatibility.
 */
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -38,12 +40,21 @@ Submitted via Y.F.N.A Reporter | Ref: ${submissionId}`
         '\n\n[Body truncated — please paste the full complaint from the app]'
       : fullBody
 
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1` +
-      `&to=${encodeURIComponent(to)}` +
-      `&su=${encodeURIComponent(subject)}` +
-      `&body=${encodeURIComponent(truncatedBody)}`
+    // Detect if on mobile
+    const isMobile = /iPhone|iPad|Android|BlackBerry|Windows Phone|Opera Mini|IEMobile/.test(navigator.userAgent)
 
-    window.open(gmailUrl, '_blank')
+    if (isMobile) {
+      // On mobile, use mailto: which works with native email client
+      const mailtoUrl = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(truncatedBody)}`
+      window.location.href = mailtoUrl
+    } else {
+      // On desktop, use Gmail compose URL
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1` +
+        `&to=${encodeURIComponent(to)}` +
+        `&su=${encodeURIComponent(subject)}` +
+        `&body=${encodeURIComponent(truncatedBody)}`
+      window.open(gmailUrl, '_blank')
+    }
   }
 
   const copyComplaint = async () => {
@@ -150,7 +161,7 @@ Submitted via Y.F.N.A Reporter | Ref: ${submissionId}`
         >
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button onClick={openGmailCompose} className="btn-primary py-3 px-8 justify-center">
-              <Mail size={15} /> Open in Gmail & Send
+              <Mail size={15} /> Open Email & Send
             </button>
             <button onClick={copyComplaint} className="btn-ghost py-3 px-6 justify-center">
               {copied ? '✓ Copied!' : 'Copy Full Text'}
@@ -162,7 +173,7 @@ Submitted via Y.F.N.A Reporter | Ref: ${submissionId}`
             style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.2)' }}
           >
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.7 }}>
-              Gmail will open with the complaint pre-filled.
+              Your default email client will open with the complaint pre-filled.
               If the text appears cut off, click 'Copy Full Text' above and paste it manually.
               Don't forget to attach your photo before sending.
             </p>
@@ -173,7 +184,7 @@ Submitted via Y.F.N.A Reporter | Ref: ${submissionId}`
             style={{ background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.2)' }}
           >
             <p style={{ color: '#fbbf24', fontWeight: 600, marginBottom: '0.5rem' }}>
-              ⚠️ Before clicking Send in Gmail:
+              ⚠️ Before clicking Send in your email client:
             </p>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.7 }}>
               1. Attach your photo manually → the image is saved at{' '}
