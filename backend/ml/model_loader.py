@@ -191,6 +191,14 @@ class YOLOModel(CivicBaseModel):
 
     def __init__(self, model_path: str):
         from ultralytics import YOLO  # pyright: ignore[reportMissingImports]
+        
+        # PyTorch 2.6+ requires explicit trust for ultralytics models
+        try:
+            import torch.serialization
+            torch.serialization.add_safe_globals([__import__('ultralytics.nn.tasks', fromlist=['DetectionModel']).DetectionModel])
+        except Exception:
+            pass  # Non-critical; YOLO will handle it or raise a clearer error
+        
         self._yolo       = YOLO(model_path)
         self._model_path = model_path
 
@@ -331,15 +339,18 @@ def load_model() -> CivicBaseModel:
             )
         try:
             return YOLOModel(settings.model_path)
-        except ImportError as exc:
-            import sys
+        except Exception as exc:
             logger.error(
-                f"Failed to load YOLO model: {exc}. "
-                "This usually means missing system libraries (e.g., libGL.so.1). "
-                "Falling back to MockModel. Backend will still be accessible but inference will be disabled.",
+                f"Failed to load YOLO model ({type(exc).__name__}): {exc}. "
+                "This could be due to missing system libraries, PyTorch security restrictions, "
+                "or corrupted model file. Falling back to MockModel. "
+                "Backend will still be accessible but inference will be disabled.",
                 exc_info=True
             )
-            logger.warning("Ensure Docker is being used for deployment with system dependencies installed.")
+            logger.warning(
+                "To fix: (1) Ensure Docker is used in deployment, (2) Model file is valid, "
+                "(3) Try converting .pt file with torch.serialization settings."
+            )
             return MockModel()
     if backend == "api":
         if not settings.model_api_url:
