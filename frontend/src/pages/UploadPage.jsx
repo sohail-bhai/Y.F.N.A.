@@ -11,6 +11,9 @@ Changes made and why:
 - Updated location input UI to show "Detect My Location" button for file uploads and GPS status indicators.
 - Check for HTTPS/localhost before attempting geolocation to handle permission requirements.
 - Updated handleSubmit() to pass coords and locationSource to report context.
+- Added camera preview modal that shows live video feed before capturing.
+- Added capturePhoto() and closeCameraPreview() functions for better camera UX.
+- Camera preview shows as a full-screen modal with Capture and Cancel buttons.
 */
 import React, { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -26,14 +29,16 @@ export default function UploadPage() {
   const { report, updateReport } = useReport()
   const navigate         = useNavigate()
 
-  const [file,       setFile]       = useState(null)
-  const [preview,    setPreview]    = useState(null)
-  const [uploading,  setUploading]  = useState(false)
-  const [location,   setLocation]   = useState('')
-  const [email,      setEmail]      = useState(report.userEmail || '')
-  const [coords,     setCoords]     = useState(null)   // { latitude, longitude, accuracy }
-  const [locating,   setLocating]   = useState(false)  // GPS fetch in progress
-  const [geocoding,  setGeocoding]  = useState(false)  // reverse geocode in progress
+  const [file,              setFile]              = useState(null)
+  const [preview,           setPreview]           = useState(null)
+  const [uploading,         setUploading]         = useState(false)
+  const [location,          setLocation]          = useState('')
+  const [email,             setEmail]             = useState(report.userEmail || '')
+  const [coords,            setCoords]            = useState(null)   // { latitude, longitude, accuracy }
+  const [locating,          setLocating]          = useState(false)  // GPS fetch in progress
+  const [geocoding,         setGeocoding]         = useState(false)  // reverse geocode in progress
+  const [showCameraPreview, setShowCameraPreview] = useState(false)  // camera modal visible
+  const [cameraStream,      setCameraStream]      = useState(null)   // active media stream
 
   const setPreviewFromFile = (nextFile) => {
     setPreview((prev) => {
@@ -140,52 +145,71 @@ export default function UploadPage() {
     }
 
     try {
-      // Request both camera + geolocation simultaneously
-      const [streamResult, positionResult] = await Promise.allSettled([
-        navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: 'environment',  // use back camera on mobile
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          } 
-        }),
-        new Promise((resolve, reject) => 
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-          })
-        )
-      ])
+      // Request camera
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',  // use back camera on mobile
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        } 
+      })
 
-      // Handle camera result
-      if (streamResult.status === 'rejected') {
-        toast.error('Camera access denied or unavailable.')
-        return
-      }
+      setCameraStream(stream)
+      setShowCameraPreview(true)
 
-      // Capture photo
-      const stream = streamResult.value
-      const track = stream.getVideoTracks()[0]
+      // Request geolocation in parallel (don't wait for camera)
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords
+          setCoords({ latitude, longitude, accuracy })
+          reverseGeocode(latitude, longitude)
+        },
+        () => {
+          toast('Location not detected — please enter it manually.', { icon: '📍' })
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      )
+    } catch (err) {
+      console.error('Camera error:', err)
+      toast.error('Camera access denied or unavailable.')
+    }
+  }
+
+  // ── Capture photo from camera preview ────────────────────────────────────
+  const capturePhoto = async () => {
+    if (!cameraStream) return
+
+    try {
+      const track = cameraStream.getVideoTracks()[0]
       const ic = new ImageCapture(track)
       const blob = await ic.takePhoto()
       const f = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' })
-      track.stop()
+      
+      // Stop camera
+      cameraStream.getTracks().forEach(t => t.stop())
+      setCameraStream(null)
+      setShowCameraPreview(false)
+
       setFile(f)
       setPreviewFromFile(f)
-
-      // Handle geolocation result
-      if (positionResult.status === 'fulfilled') {
-        const { latitude, longitude, accuracy } = positionResult.value.coords
-        setCoords({ latitude, longitude, accuracy })
-        // trigger reverse geocoding
-        await reverseGeocode(latitude, longitude)
-      } else {
-        toast('Location not detected — please enter it manually.', { icon: '📍' })
-      }
-    } catch {
-      toast.error('Camera access denied or unavailable.')
+      toast.success('Photo captured!')
+    } catch (err) {
+      console.error('Capture error:', err)
+      toast.error('Failed to capture photo.')
     }
+  }
+
+  // ── Close camera preview ────────────────────────────────────────────────
+  const closeCameraPreview = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(t => t.stop())
+      setCameraStream(null)
+    }
+    setShowCameraPreview(false)
   }
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -218,6 +242,65 @@ export default function UploadPage() {
 
   return (
     <PageWrapper>
+      {/* Camera Preview Modal */}
+      <AnimatePresence>
+        {showCameraPreview && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md flex flex-col gap-4"
+            >
+              {/* Camera Video Preview */}
+              <div className="relative bg-black rounded-xl overflow-hidden">
+                <video
+                  ref={(el) => {
+                    if (el && cameraStream && !el.srcObject) {
+                      el.srcObject = cameraStream
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                  className="w-full h-96 object-cover"
+                />
+              </div>
+
+              {/* Capture & Cancel Buttons */}
+              <div className="flex gap-3">
+                <motion.button
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={capturePhoto}
+                  className="btn-primary flex-1 py-3 justify-center"
+                >
+                  <Camera size={16} />
+                  Capture Photo
+                </motion.button>
+                <motion.button
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={closeCameraPreview}
+                  className="btn-ghost flex-1 py-3 justify-center"
+                >
+                  <X size={16} />
+                  Cancel
+                </motion.button>
+              </div>
+
+              <p className="label-mono text-center" style={{ color: 'var(--text-secondary)' }}>
+                Position your camera and tap "Capture Photo"
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <motion.div
