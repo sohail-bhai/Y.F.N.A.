@@ -191,16 +191,22 @@ class YOLOModel(CivicBaseModel):
 
     def __init__(self, model_path: str):
         from ultralytics import YOLO  # pyright: ignore[reportMissingImports]
+        import torch
         
-        # PyTorch 2.6+ requires explicit trust for ultralytics models
+        # PyTorch 2.6+ blocks model loading by default. Disable weights_only for trusted .pt files.
+        # This is safe since we control the model file.
+        original_load = torch.load
+        def patched_load(f, *args, **kwargs):
+            if 'weights_only' not in kwargs:
+                kwargs['weights_only'] = False
+            return original_load(f, *args, **kwargs)
+        
         try:
-            import torch.serialization
-            torch.serialization.add_safe_globals([__import__('ultralytics.nn.tasks', fromlist=['DetectionModel']).DetectionModel])
-        except Exception:
-            pass  # Non-critical; YOLO will handle it or raise a clearer error
-        
-        self._yolo       = YOLO(model_path)
-        self._model_path = model_path
+            torch.load = patched_load
+            self._yolo = YOLO(model_path)
+            self._model_path = model_path
+        finally:
+            torch.load = original_load
 
     @property
     def name(self) -> str:
