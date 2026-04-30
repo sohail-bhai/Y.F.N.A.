@@ -8,12 +8,14 @@ from config import get_settings
 
 settings = get_settings()
 
-engine = create_async_engine(
-    settings.database_url,
-    echo=False,
-    pool_size=10,
-    max_overflow=20,
-)
+engine_kwargs = {"echo": False}
+
+# SQLite does not support QueuePool tuning kwargs like pool_size/max_overflow.
+if not settings.database_url.startswith("sqlite"):
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 20
+
+engine = create_async_engine(settings.database_url, **engine_kwargs)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,
