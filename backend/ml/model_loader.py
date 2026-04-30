@@ -329,7 +329,18 @@ def load_model() -> CivicBaseModel:
                 f"MODEL_PATH does not exist: {settings.model_path}. "
                 "For Railway, commit the .pt file into the repo or download it at startup."
             )
-        return YOLOModel(settings.model_path)
+        try:
+            return YOLOModel(settings.model_path)
+        except ImportError as exc:
+            import sys
+            logger.error(
+                f"Failed to load YOLO model: {exc}. "
+                "This usually means missing system libraries (e.g., libGL.so.1). "
+                "Falling back to MockModel. Backend will still be accessible but inference will be disabled.",
+                exc_info=True
+            )
+            logger.warning("Ensure Docker is being used for deployment with system dependencies installed.")
+            return MockModel()
     if backend == "api":
         if not settings.model_api_url:
             raise ValueError("MODEL_API_URL must be set for API backend.")
