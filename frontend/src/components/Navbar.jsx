@@ -24,11 +24,11 @@ export default function Navbar() {
         borderBottom: '1px solid var(--border-subtle)',
       }}
     >
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 group">
+        <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 group flex-shrink-0">
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ background: 'var(--accent-main)' }}
           >
             <MapPin size={16} strokeWidth={2.5} style={{ color: 'var(--bg-primary)' }} />
@@ -37,14 +37,14 @@ export default function Navbar() {
             style={{
               fontFamily: "'Playfair Display', Georgia, serif",
               fontWeight: 700,
-              fontSize: '1.05rem',
+              fontSize: 'clamp(0.9rem, 2vw, 1.05rem)',
               color: 'var(--text-primary)',
               letterSpacing: '-0.01em',
             }}
           >
             Y.F.N.A
           </span>
-          <span className="label-mono" style={{ color: 'var(--text-muted)', marginTop: '2px' }}>
+          <span className="label-mono hidden sm:block" style={{ color: 'var(--text-muted)', marginTop: '2px' }}>
             Reporter
           </span>
         </Link>
@@ -91,11 +91,11 @@ export default function Navbar() {
 
         {/* Right action */}
         {isLanding ? (
-          <Link to="/upload" className="btn-primary text-sm py-2 px-4">
-            Report an Issue
+          <Link to="/upload" className="btn-primary text-xs sm:text-sm py-2 sm:py-2.5 px-3 sm:px-4 min-w-fit">
+            Report
           </Link>
         ) : (
-          <Link to="/" className="btn-ghost text-sm py-2 px-4">
+          <Link to="/" className="btn-ghost text-xs sm:text-sm py-2 sm:py-2.5 px-3 sm:px-4 min-w-fit">
             Home
           </Link>
         )}

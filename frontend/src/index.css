@@ -36,6 +36,15 @@
     font-weight: 400;
     line-height: 1.6;
     min-height: 100vh;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  body * {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   ::selection {
@@ -65,10 +74,12 @@
 
   /* Buttons */
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-6 py-3 rounded-lg font-body font-medium text-sm
-           transition-all duration-200 cursor-pointer select-none;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-body font-medium text-sm
+           transition-all duration-200 cursor-pointer select-none min-h-12;
     background: var(--accent-main);
     color: var(--bg-primary);
+    min-width: 44px;
+    touch-action: manipulation;
   }
   .btn-primary:hover {
     background: var(--accent-soft);
@@ -76,18 +87,32 @@
     box-shadow: 0 8px 24px -4px rgba(232,197,71,0.35);
   }
   .btn-primary:active { transform: translateY(0); }
+  @media (max-width: 640px) {
+    .btn-primary {
+      @apply py-3 px-4 text-sm;
+      min-height: 48px;
+    }
+  }
 
   .btn-ghost {
-    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-body font-medium text-sm
-           transition-all duration-200 cursor-pointer select-none;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-body font-medium text-sm
+           transition-all duration-200 cursor-pointer select-none min-h-12;
     background: transparent;
     color: var(--text-secondary);
     border: 1px solid var(--border-subtle);
+    min-width: 44px;
+    touch-action: manipulation;
   }
   .btn-ghost:hover {
     border-color: var(--border-strong);
     color: var(--text-primary);
     background: var(--bg-elevated);
+  }
+  @media (max-width: 640px) {
+    .btn-ghost {
+      @apply py-3 px-4 text-sm;
+      min-height: 48px;
+    }
   }
 
   /* Typography */
@@ -126,16 +151,25 @@
 
   /* Input */
   .input-base {
-    @apply w-full px-4 py-3 rounded-lg text-sm outline-none transition-all duration-200;
+    @apply w-full px-4 py-3 rounded-lg text-base outline-none transition-all duration-200;
     background: var(--bg-secondary);
     border: 1px solid var(--border-subtle);
     color: var(--text-primary);
     font-family: 'DM Sans', sans-serif;
+    min-height: 44px;
+    font-size: 16px;
+    touch-action: manipulation;
   }
   .input-base::placeholder { color: var(--text-muted); }
   .input-base:focus {
     border-color: var(--accent-main);
     box-shadow: 0 0 0 3px rgba(232,197,71,0.12);
+  }
+  @media (max-width: 640px) {
+    .input-base {
+      font-size: 16px;
+      min-height: 48px;
+    }
   }
 
   /* Noise overlay */
